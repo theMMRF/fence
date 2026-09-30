@@ -8,11 +8,13 @@ concurrency:
   cancel-in-progress: true
 jobs:
   Security:
+    if: github.repository_owner == 'uc-cdis'
     name: Security Pipeline
     uses: uc-cdis/.github/.github/workflows/securitypipeline.yaml@master
     secrets: inherit  # pragma: allowlist secret
 
   UnitTest:
+    if: github.repository_owner == 'uc-cdis'
     name: Python Unit Test with Postgres
     uses: uc-cdis/.github/.github/workflows/python_unit_test.yaml@master
     with:
@@ -21,6 +23,7 @@ jobs:
       run-coveralls: true
 
   BuildImageAndPush:
+    if: github.repository_owner == 'uc-cdis'
     name: Build Image and Push
     needs: Security
     # https://github.com/uc-cdis/.github/blob/master/.github/workflows/image_build_push.yaml

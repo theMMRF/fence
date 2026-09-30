@@ -12,9 +12,8 @@ from fence.blueprints.data.indexd import (
     verify_data_upload_bucket_configuration,
 )
 from fence.config import config
-from fence.errors import Forbidden, InternalError, UserError, Unauthorized
+from fence.errors import Forbidden, InternalError, UserError, Unauthorized, NotFound
 from fence.utils import get_valid_expiration
-
 
 logger = get_logger(__name__)
 
@@ -68,6 +67,8 @@ def delete_data_file(file_id):
                     500,
                 )
         else:
+            if record.index_document.get("visibility") == "restricted":
+                raise NotFound("No indexed document found")
             return (
                 flask.jsonify(
                     {

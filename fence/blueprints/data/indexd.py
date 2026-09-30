@@ -53,6 +53,7 @@ from fence.resources.audit.utils import enable_audit_logging
 from fence.utils import get_valid_expiration_from_request
 from fence.metrics import metrics
 
+from .indexd_auth import indexd_read_credentials
 from . import multipart_upload
 from ...models import AssumeRoleCacheAWS, query_for_user, query_for_user_by_id
 from ...models import AssumeRoleCacheGCP
@@ -314,7 +315,9 @@ class BlankIndex(object):
 
         if self.guid:
             index_url = self.indexd.rstrip("/") + "/index/" + self.guid
-            indexd_response = requests.get(index_url)
+            indexd_response = requests.get(
+                index_url, **indexd_read_credentials(service_lookup=True)
+            )
             if indexd_response.status_code == 200:
                 document = indexd_response.json()
                 self.logger.info(f"Record with {self.guid} id found in Indexd.")
@@ -502,7 +505,9 @@ class IndexedFile(object):
         indexd_server = config.get("INDEXD") or config["BASE_URL"] + "/index"
         url = indexd_server + "/index/"
         try:
-            res = requests.get(url + self.file_id)
+            res = requests.get(
+                url + self.file_id, **indexd_read_credentials(service_lookup=True)
+            )
         except Exception as e:
             logger.error(
                 "failed to reach indexd at {0}: {1}".format(url + self.file_id, e)
@@ -569,6 +574,8 @@ class IndexedFile(object):
                 usernames_from_passports=list(users_from_passports.keys()),
             )
             if not is_authorized:
+                if self.index_document.get("visibility") == "restricted":
+                    raise NotFound("No indexed document found")
                 msg = (
                     f"Either you weren't authenticated successfully or you don't have "
                     f"{action_to_permission[action]} permission "
@@ -959,8 +966,7 @@ class S3IndexedFileLocation(IndexedFileLocation):
         if hasattr(flask.current_app, "db"):  # we don't have db in startup
             with flask.current_app.db.session as session:
                 session.execute(
-                    text(
-                        """\
+                    text("""\
                     INSERT INTO assume_role_cache (
                         arn,
                         expires_at,
@@ -977,8 +983,7 @@ class S3IndexedFileLocation(IndexedFileLocation):
                         expires_at = EXCLUDED.expires_at,
                         aws_access_key_id = EXCLUDED.aws_access_key_id,
                         aws_secret_access_key = EXCLUDED.aws_secret_access_key,
-                        aws_session_token = EXCLUDED.aws_session_token;"""
-                    ),
+                        aws_session_token = EXCLUDED.aws_session_token;"""),
                     dict(arn=role_arn, expires_at=expires_at, **rv),
                 )
         return rv
@@ -1406,8 +1411,7 @@ class GoogleStorageIndexedFileLocation(IndexedFileLocation):
                     # we don't need to populate gcp_key_db_entry anymore, it was for
                     # expiration, but now we have a specific field for that.
                     session.execute(
-                        text(
-                            """\
+                        text("""\
                         INSERT INTO gcp_assume_role_cache (
                             expires_at,
                             gcp_proxy_group_id,
@@ -1422,8 +1426,7 @@ class GoogleStorageIndexedFileLocation(IndexedFileLocation):
                             expires_at = EXCLUDED.expires_at,
                             gcp_proxy_group_id = EXCLUDED.gcp_proxy_group_id,
                             gcp_private_key = EXCLUDED.gcp_private_key,
-                            gcp_key_db_entry = EXCLUDED.gcp_key_db_entry;"""
-                        ),
+                            gcp_key_db_entry = EXCLUDED.gcp_key_db_entry;"""),
                         db_entry,
                     )
 
