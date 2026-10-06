@@ -80,3 +80,43 @@ def test_index_document_uses_service_credentials(app):
         assert IndexedFile("private-guid").index_document["visibility"] == "restricted"
         assert get.call_args.kwargs["auth"] == ("service", "test-password")
         assert get.call_args.kwargs["allow_redirects"] is False
+
+
+@pytest.mark.parametrize(
+    "discover,download", [(True, False), (False, True), (True, True), (False, False)]
+)
+def test_discovery_grants_do_not_replace_storage_grants(app, discover, download):
+    record = IndexedFile("private-guid")
+    record.__dict__["index_document"] = {
+        "visibility": "restricted",
+        "authz": ["/private"],
+        "urls": ["s3://private/file"],
+    }
+    arborist = MagicMock()
+    arborist.auth_mapping.return_value = {
+        "/private": (
+            [{"service": "indexd", "method": "read-metadata"}] if discover else []
+        )
+        + ([{"service": "fence", "method": "read-storage"}] if download else [])
+    }
+    arborist.auth_request.side_effect = lambda **kwargs: (
+        kwargs["service"] == "fence"
+        and kwargs["methods"] == "read-storage"
+        and download
+    )
+    with app.test_request_context(), patch.object(app, "arborist", arborist), patch(
+        "fence.blueprints.data.indexd.get_jwt", return_value="test-user"
+    ), patch.object(record, "_get_signed_url", return_value="signed-url") as sign:
+        if download:
+            assert record.get_signed_url("s3", "download", 300) == ("signed-url", None)
+            sign.assert_called_once()
+        else:
+            with pytest.raises(NotFound):
+                record.get_signed_url("s3", "download", 300)
+            sign.assert_not_called()
+        arborist.auth_request.assert_called_once_with(
+            jwt="test-user",
+            service="fence",
+            methods="read-storage",
+            resources=["/private"],
+        )
