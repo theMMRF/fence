@@ -470,7 +470,7 @@ class BlankIndex(object):
         if self.guid:
             index_url = self.indexd.rstrip("/") + "/index/" + self.guid
             indexd_response = requests.get(
-                index_url, **indexd_read_credentials(service_lookup=True)
+                index_url, timeout=30, **indexd_read_credentials(service_lookup=True)
             )
             if indexd_response.status_code == 200:
                 document = indexd_response.json()
@@ -914,7 +914,9 @@ class IndexedFile(object):
         url = indexd_server + "/index/"
         try:
             res = requests.get(
-                url + self.file_id, **indexd_read_credentials(service_lookup=True)
+                url + self.file_id,
+                timeout=30,
+                **indexd_read_credentials(service_lookup=True),
             )
         except Exception as e:
             logger.error(

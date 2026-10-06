@@ -80,6 +80,7 @@ def test_index_document_uses_service_credentials(app):
         assert IndexedFile("private-guid").index_document["visibility"] == "restricted"
         assert get.call_args.kwargs["auth"] == ("service", "test-password")
         assert get.call_args.kwargs["allow_redirects"] is False
+        assert get.call_args.kwargs["timeout"] == 30
 
 
 @pytest.mark.parametrize(

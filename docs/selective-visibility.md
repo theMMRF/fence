@@ -5,7 +5,8 @@ using an IndexD deployment with restricted discovery. It defaults to false.
 `INDEXD_USERNAME` and `INDEXD_PASSWORD` must be present in Fence's server secret;
 missing credentials fail closed. IndexD GET requests then use those trusted
 service credentials and disable redirects so credentials cannot follow a record
-resolution redirect to another service.
+resolution redirect to another service. Both IndexD GET paths have a finite
+30-second timeout, including when the feature is disabled.
 
 Fence needs the record before its existing storage checks, including write-only
 upload grants and verified passport downloads. Resolving it with the service
