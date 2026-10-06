@@ -912,11 +912,12 @@ class IndexedFile(object):
     def index_document(self):
         indexd_server = config.get("INDEXD") or config["BASE_URL"] + "/index"
         url = indexd_server + "/index/"
+        read_credentials = indexd_read_credentials(service_lookup=True)
         try:
             res = requests.get(
                 url + self.file_id,
                 timeout=30,
-                **indexd_read_credentials(service_lookup=True),
+                **read_credentials,
             )
         except Exception as e:
             logger.error(

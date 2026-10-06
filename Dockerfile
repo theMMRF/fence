@@ -21,6 +21,8 @@ RUN chown -R gen3:gen3 /venv/
 USER gen3
 # ------ Builder stage ------
 FROM base AS builder
+ARG GIT_COMMIT
+ARG GIT_VERSION
 
 USER gen3
 
@@ -37,8 +39,8 @@ COPY --chown=gen3:gen3 ./deployment/wsgi/wsgi.py /$appname/wsgi.py
 RUN poetry install --without dev --no-interaction
 
 # Setup version info
-RUN git config --global --add safe.directory ${appname} && COMMIT=`git rev-parse HEAD` && echo "COMMIT=\"${COMMIT}\"" > $appname/version_data.py \
-    && VERSION=`git describe --always --tags` && echo "VERSION=\"${VERSION}\"" >> $appname/version_data.py
+RUN git config --global --add safe.directory ${appname} && COMMIT="${GIT_COMMIT:-$(git rev-parse HEAD)}" && echo "COMMIT=\"${COMMIT}\"" > $appname/version_data.py \
+    && VERSION="${GIT_VERSION:-$(git describe --always --tags)}" && echo "VERSION=\"${VERSION}\"" >> $appname/version_data.py
 
 
 

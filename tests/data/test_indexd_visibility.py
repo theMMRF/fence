@@ -121,3 +121,12 @@ def test_discovery_grants_do_not_replace_storage_grants(app, discover, download)
             methods="read-storage",
             resources=["/private"],
         )
+
+
+def test_index_document_preserves_missing_credentials_error(app):
+    with patch(
+        "fence.blueprints.data.indexd_auth.config", {"INDEXD_AUTHENTICATED_READS": True}
+    ), patch("fence.blueprints.data.indexd.requests.get") as get:
+        with pytest.raises(InternalError):
+            IndexedFile("private-guid").index_document
+        get.assert_not_called()
