@@ -1,7 +1,10 @@
 # Authenticated IndexD resolution
 
 Set `INDEXD_AUTHENTICATED_READS: true` in the existing Fence configuration when
-using an IndexD deployment with restricted discovery. It defaults to false.
+using an opted-in IndexD deployment with project metadata visibility. It defaults to false.
+Set `PROJECT_VISIBILITY_ENABLED: true` in Fence too so denied signed-download
+and deletion requests return generic 404s without exposing authorization paths.
+That setting also defaults to false, retaining legacy error responses.
 `INDEXD_USERNAME` and `INDEXD_PASSWORD` must be present in Fence's server secret;
 missing credentials fail closed. IndexD GET requests then use those trusted
 service credentials and disable redirects so credentials cannot follow a record

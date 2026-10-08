@@ -73,7 +73,7 @@ def delete_data_file(file_id):
                     500,
                 )
         else:
-            if record.index_document.get("visibility") == "restricted":
+            if config.get("PROJECT_VISIBILITY_ENABLED", False):
                 raise NotFound("No indexed document found")
             return (
                 flask.jsonify(

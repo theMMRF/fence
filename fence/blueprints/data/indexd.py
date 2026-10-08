@@ -985,7 +985,7 @@ class IndexedFile(object):
                 usernames_from_passports=list(users_from_passports.keys()),
             )
             if not is_authorized:
-                if self.index_document.get("visibility") == "restricted":
+                if config.get("PROJECT_VISIBILITY_ENABLED", False):
                     raise NotFound("No indexed document found")
                 msg = (
                     f"Either you weren't authenticated successfully or you don't have "

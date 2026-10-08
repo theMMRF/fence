@@ -835,6 +835,7 @@ INDEXD: null
 
 # Enable after deploying IndexD visibility support. Uses existing service credentials
 # for trusted resolution; Fence still checks caller storage access before signing.
+PROJECT_VISIBILITY_ENABLED: false
 INDEXD_AUTHENTICATED_READS: false
 
 # this is the username which fence uses to make authenticated requests to indexd

@@ -6,6 +6,7 @@ import pytest
 from fence.blueprints.data.indexd import BlankIndex, IndexedFile
 from fence.blueprints.data.indexd_auth import indexd_read_credentials
 from fence.errors import InternalError, NotFound
+from fence import config
 
 
 @pytest.mark.parametrize("enabled", [True, False])
@@ -32,10 +33,10 @@ def test_missing_service_credentials_fail_closed(app):
             indexd_read_credentials(service_lookup=True)
 
 
-def test_signed_url_checks_storage_grant_before_signing(app):
+def test_signed_url_checks_storage_grant_before_signing(app, monkeypatch):
+    monkeypatch.setitem(config, "PROJECT_VISIBILITY_ENABLED", True)
     record = IndexedFile("private-guid")
     record.__dict__["index_document"] = {
-        "visibility": "restricted",
         "authz": ["/private"],
         "urls": ["s3://private/file"],
     }
@@ -50,7 +51,6 @@ def test_signed_url_checks_storage_grant_before_signing(app):
 def test_authorized_download_preserves_standard_signing(app):
     record = IndexedFile("private-guid")
     record.__dict__["index_document"] = {
-        "visibility": "restricted",
         "authz": ["/private"],
         "urls": ["s3://private/file"],
     }
@@ -65,7 +65,6 @@ def test_index_document_uses_service_credentials(app):
     response = MagicMock(status_code=200)
     response.json.return_value = {
         "did": "private-guid",
-        "visibility": "restricted",
         "authz": ["/private"],
         "urls": ["s3://private/file"],
     }
@@ -77,7 +76,7 @@ def test_index_document_uses_service_credentials(app):
     with patch("fence.blueprints.data.indexd_auth.config", values), patch(
         "fence.blueprints.data.indexd.requests.get", return_value=response
     ) as get:
-        assert IndexedFile("private-guid").index_document["visibility"] == "restricted"
+        assert IndexedFile("private-guid").index_document["authz"] == ["/private"]
         assert get.call_args.kwargs["auth"] == ("service", "test-password")
         assert get.call_args.kwargs["allow_redirects"] is False
         assert get.call_args.kwargs["timeout"] == 30
@@ -86,10 +85,10 @@ def test_index_document_uses_service_credentials(app):
 @pytest.mark.parametrize(
     "discover,download", [(True, False), (False, True), (True, True), (False, False)]
 )
-def test_discovery_grants_do_not_replace_storage_grants(app, discover, download):
+def test_discovery_grants_do_not_replace_storage_grants(app, discover, download, monkeypatch):
+    monkeypatch.setitem(config, "PROJECT_VISIBILITY_ENABLED", True)
     record = IndexedFile("private-guid")
     record.__dict__["index_document"] = {
-        "visibility": "restricted",
         "authz": ["/private"],
         "urls": ["s3://private/file"],
     }
