@@ -12,5 +12,6 @@ on:
 
 jobs:
   markdown_validation:
+    if: github.repository_owner == 'uc-cdis'
     name: Markdown validation
     uses: uc-cdis/.github/.github/workflows/validate_markdown.yaml@master
